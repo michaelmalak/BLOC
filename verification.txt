@@ -1,0 +1,27 @@
+Differing lines: []
+Compiled program length 3231
+PASS: entire recompiled executable is byte-for-byte identical: 7970 bytes
+SHA-256: 222976a5c4bf011914080a541dab224bd5928f5996b2effaec7771ad8250dd46
+PASS: semantic-tree re-emission matches all 3231 program bytes in 63 lines.
+Statements: 273
+String literals: 62
+
+Original compiler transcript (ATASCII EOL converted to newline):
+
+        abc
+
+     A BASIC Compiler Version 1.O2
+          Copyright 1982,1983
+
+monarch data systems
+          All Rights Reserved
+Place SOURCE disk in drive
+
+SOURCE Filename?DESTINATION Filename?COMPILING...[CURSOR-DOWN]
+19 VARIABLES
+63 LINES
+
+[   10]........................
+[  235]........................
+[ 2900].............
+COMPILE COMPLETE

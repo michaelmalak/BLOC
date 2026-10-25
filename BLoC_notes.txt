@@ -1,0 +1,102 @@
+BLoC RECOVERY NOTES
+
+Binary structure
+
+Input ZIP: BLoC_Binary_Load_Compressor.zip (5,223 bytes)
+Contained file: BLoC - Binary Load Compressor.xex (7,970 bytes)
+ZIP SHA-256: 4cb0804632a16b1901aeb7d631d403ce8934a5cee75512ec4ced1a62d9e45016
+
+Load segment: $2600-$4515 (7,958 bytes)
+Run vector:   $02E0-$02E1, value $2610
+Runtime:      $2600-$373C, including header, routines, and dispatch table
+Line table:   $373D-$383C, 63 line entries plus the $8000 end marker
+Variables:    $383D-$3875, 19 slots of three bytes
+Program:      $3876-$4514, 3,231 bytes
+Final opcode: $4515, compiler-generated END
+
+Replacement variable dictionary
+
+Address  Readable name  Native name  Role
+$383D    SAVED          SV           Byte-saving counter; initialized to 62; divided by 125 for sector display.
+$3840    FILE$          F$           Input filespec, menu response, output name, and directory-line string.
+$3843    SRC            SD           Source drive number.
+$3846    LO             A            Input header low byte; later current address being scanned; USR result.
+$3849    HI             B            Input header high byte; later buffer scan index and temporary quotient.
+$384C    DST            DD           Destination drive number.
+$384F    BUF$           S$           Binary segment buffer; includes load-address headers and segment bytes.
+$3852    SEGEND         EN           Original input segment end address.
+$3855    START          ST           Current input chunk start address.
+$3858    LAST           CE           Current chunk end address after limiting to available buffer capacity.
+$385B    CAPACITY       SZ           Buffer capacity, computed from FRE(0)-470.
+$385E    TEMP           T            Temporary address, byte count, quotient, or adjusted end address.
+$3861    ENDPOS         EP           Position of the active segment end-address field within BUF$.
+$3864    ZEROEND        ZE           Index scanning to the end of a zero-byte run.
+$3867    ADDR           AD           Address used when writing a new binary segment header.
+$386A    PAGE           HB           High-byte quotient used when splitting a 16-bit address.
+$386D    SPEC$          N$           Temporary copy of a filespec while adding a drive prefix.
+$3870    UNUSED         UN           Unused three-byte slot; original name and original type cannot be known.
+$3873    CUT            CP           Buffer position at the $BFFF boundary used by the $C000-$CFFF path.
+
+Program walkthrough
+
+10            Jump to the title screen.
+20-31         Get source filespec, read binary signature, open Dn:COMPRESS,
+              copy signature, and set up the compression progress screen.
+32-40         Read each load-segment header, limit the working chunk to RAM,
+              and prepare IOCB 1 for a direct block read into the buffer.
+50            Call the embedded machine code to perform that block read.
+60-150        Scan for zero runs, shorten the preceding segment, introduce a
+              following segment, and move retained bytes down in the buffer.
+190-220       Filespec input and drive-prefix handling.
+230-280       Title/credits screen, key wait, drive defaults, buffer allocation.
+293-430       Main menu and directory, drive, compression, file, reboot, and
+              format commands.
+540-545       Runtime error handling, with EOF (136) handled separately.
+2900-2910     Text-screen setup and source/destination drive display.
+8000          Close files and list the destination directory.
+8100-8110     Write the current chunk; continue a segment split across chunks.
+8200-8230     Special handling around $C000-$CFFF, including omission of that
+              address region in the crossing-segment path.
+8300          Display the saved-sector count using integer SAVED/125.
+8400-8410     Memory-mapped interrupt-mask manipulation.
+9000          Trim a zero run extending through the end of the buffer.
+
+This program repacks the Atari segmented binary-load format. It does not
+insert a general-purpose decompressor. Runs of at least five zero bytes are
+candidates for omission, with new four-byte segment headers used to describe
+retained ranges. Address thresholds and special cases remain as compiled.
+Whether omission is appropriate for a particular target program depends on
+that program and the memory state when it loads.
+
+Embedded 6502 helper (line 50)
+
+Bytes: 68 A2 10 4C 56 E4
+
+    PLA         ; discard the zero USR argument count
+    LDX #$10    ; IOCB 1
+    JMP $E456   ; CIOV, using fields prepared by BASIC line 40
+
+Strings and credits
+
+The raw literals include the title "bloc", "binary load compressor", and
+credits for "the nybbler maniacs", "OF  WASHINGTON, D.C.", and
+"yoho software,inc.". Their capitalization, inverse-video bits, and graphics
+characters are preserved in the native source files. The {HH} convention in
+the readable listing records each original byte without relying on a font.
+
+Original quirks retained
+
+Line 30 rejects the signature only if BOTH bytes differ from 255 (AND).
+Line 220 can fall through into the title screen when its condition is false.
+Line 8220 puts the quotient/high byte before the remainder/low byte in one
+new end-address field. Line 8410 writes decimal 53744 ($D1F0).
+These are observations of the supplied executable, not proposed corrections.
+Changing any of them would break exact reproduction. Their consequences
+have not been independently exercised in a full Atari emulation session.
+
+Recovery boundaries
+
+The result retains original executable behavior, including any original
+defects. New variable names describe inferred roles; several numeric slots
+serve multiple roles. Assignment spelling, omitted INT operations, comments,
+and names cannot be established uniquely by successful recompilation.
